@@ -3,6 +3,7 @@ An implementation of Model Predictive Control controller using google-research/m
 
 Credits: https://github.com/google-research/motion_imitation
 """
+#hej
 from mpc_controller import openloop_gait_generator, com_velocity_estimator, raibert_swing_leg_controller, \
     torque_stance_leg_controller, locomotion_controller
 
