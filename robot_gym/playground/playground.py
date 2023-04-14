@@ -4,7 +4,7 @@ from robot_gym.controllers.bezier import bezier_controller
 from robot_gym.controllers.pose import pose_controller
 from robot_gym.controllers.mpc import mpc_controller
 from robot_gym.controllers.mpc import path_controller
-from robot_gym.controllers.cool import cool_controller
+#from robot_gym.controllers.cool import cool_controller
 from robot_gym.controllers.auto_pose import auto_pose_controller
 
 from robot_gym.core.simulation import Simulation
@@ -60,7 +60,7 @@ class Playground:
         mcp_ctrl = self._sim.pybullet_client.addUserDebugParameter("MPC controller", 0, -1, 0)
         pose_ctrl = self._sim.pybullet_client.addUserDebugParameter("Pose controller", 0, -1, 0)
         bezier_ctrl = self._sim.pybullet_client.addUserDebugParameter("Bezier controller", 0, -1, 0)
-        cool_ctrl = self._sim.pybullet_client.addUserDebugParameter("Cool controller", 0, -1, 0)
+        #cool_ctrl = self._sim.pybullet_client.addUserDebugParameter("Cool controller", 0, -1, 0)
         auto_pose_ctrl = self._sim.pybullet_client.addUserDebugParameter("Auto pose controller", 0, -1, 0)
         return mcp_ctrl, pose_ctrl, bezier_ctrl, cool_ctrl, auto_pose_ctrl
 
@@ -68,9 +68,9 @@ class Playground:
         mpc_flag = self._sim.pybullet_client.readUserDebugParameter(ui[0])
         pose_flag = self._sim.pybullet_client.readUserDebugParameter(ui[1])
         bezier_flag = self._sim.pybullet_client.readUserDebugParameter(ui[2])
-        cool_flag = self._sim.pybullet_client.readUserDebugParameter(ui[3])
-        auto_pose_flag = self._sim.pybullet_client.readUserDebugParameter(ui[4])
-        path_flag = self._sim.pybullet_client.readUserDebugParameter(ui[5])
+        #cool_flag = self._sim.pybullet_client.readUserDebugParameter(ui[3])
+        auto_pose_flag = self._sim.pybullet_client.readUserDebugParameter(ui[3])
+        #path_flag = self._sim.pybullet_client.readUserDebugParameter(ui[5])
         if mpc_flag % 2 != 0:
             self._current_ctrl = mpc_controller.MPCController
             return True, self._current_ctrl
@@ -80,15 +80,15 @@ class Playground:
         elif bezier_flag % 2 != 0:
             self._current_ctrl = bezier_controller.BezierController
             return True, self._current_ctrl
-        elif cool_flag % 2 != 0:
-            self._current_ctrl = cool_controller.CoolController
-            return True, self._current_ctrl
         elif auto_pose_flag % 2 != 0:
             self._current_ctrl = auto_pose_controller.AutoPoseController
             return True, self._current_ctrl
-        if mpc_flag % 2 != 0:
-            self._current_ctrl = path_controller.MPCController
-            return True, self._current_ctrl
+        #elif cool_flag % 2 != 0:
+            #self._current_ctrl = cool_controller.CoolController
+            #return True, self._current_ctrl
+        #if mpc_flag % 2 != 0:
+            #self._current_ctrl = path_controller.MPCController
+            #return True, self._current_ctrl
         return False, self._current_ctrl
 
     def _update_world(self):
