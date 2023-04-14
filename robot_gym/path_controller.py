@@ -12,7 +12,7 @@ from robot_gym.controllers.controller import Controller
 from robot_gym.controllers.mpc.kinematics import Kinematics
 from robot_gym.model.robots import simple_motor
 
-DESTINATION_VECTOR = [-2, 1]
+DESTINATION_VECTOR = [0, 0]
 
 class MPCController(Controller):
 
@@ -72,29 +72,29 @@ class MPCController(Controller):
 
     @staticmethod
     def setup_ui_params(pybullet_client):
-        vx_id = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
-        vy_id = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
+        x_id = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
+        y_id = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
+        speed_id = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
         started = pybullet_client.addUserDebugParameter("Start/Stop", 1,0,1)
-        #wz_id = pybullet_client.addUserDebugParameter("Wz", -2., 2., 0.)
-        return vx_id, vy_id, started
+        return x_id, y_id, speed_id, started
 
     @staticmethod
     def read_ui_params(pybullet_client, ui): #Setting speeds from UI
-        vx_id, vy_id, started = ui
-        vx = pybullet_client.readUserDebugParameter(vx_id)
-        vy = pybullet_client.readUserDebugParameter(vy_id)
-        #wz = pybullet_client.readUserDebugParameter(wz_id)
+        x_id, y_id, speed_id, started = ui
+        xcoord = pybullet_client.readUserDebugParameter(x_id)
+        ycoord = pybullet_client.readUserDebugParameter(y_id)
+        speed = pybullet_client.readUserDebugParameter(speed_id)
         start = pybullet_client.readUserDebugParameter(started)
-        return vx, vy, start
+        return xcoord, ycoord, speed, start
 
     def update_controller_params(self, params):
-        if len(params) == 2:
-            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1] = params
+        if len(params) == 3:
+            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], speed = params
             vx = 0.
             wz = 0.
             vy = 0.
         else:
-            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], start = params
+            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], speed, start = params
             vx = 0.
             wz = 0.
             vy = 0.
@@ -114,14 +114,14 @@ class MPCController(Controller):
             #set speed if pos is not desierd pos
             if((base_orientation[2] >= desierdAngle) & (DESTINATION_VECTOR[1] >= 0)):
                 if ((base_position[0] <= DESTINATION_VECTOR[0]) & (DESTINATION_VECTOR[0] > 0)):
-                    vx = 0.5 
+                    vx = speed
                 elif ((base_position[0] >= DESTINATION_VECTOR[0]) & (desierdAngle > math.pi/2) & (DESTINATION_VECTOR[0] < 0)):
-                    vx = 0.5
+                    vx = speed
             elif ((base_orientation[2] <= desierdAngle) & (DESTINATION_VECTOR[1] < 0)):
                 if ((base_position[0] <= DESTINATION_VECTOR[0]) & (DESTINATION_VECTOR[0] > 0)):
-                    vx = 0.5 
+                    vx = speed
                 elif ((base_position[0] >= DESTINATION_VECTOR[0]) & (desierdAngle > math.pi/2) & (DESTINATION_VECTOR[0] < 0)):
-                    vx = 0.5
+                    vx = speed
 
             if((DESTINATION_VECTOR[1] < 0)):
                 if ((base_orientation[2] >= desierdAngle)):
