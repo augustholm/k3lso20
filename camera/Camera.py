@@ -51,9 +51,23 @@ def findObstacle(image, floorV):
                 numObs = numObs + 1
     return obsM
 
+def saveCalibration(floorV):
+    calFile = open("calibration.txt", 'w')
+    for i in range(y):
+        calFile.write(str(floorV[i]) + "\n")
+    calFile.close()
+
+def getCalibration():
+    calFile = open("calibration.txt", 'r')
+    floorV = calFile.read().split()
+    return floorV
+
+
 im = getFrame()
 
-floorVector = calibration(im)
+#floorVector = calibration(im)
+#saveCalibration(floorVector)
+floorVector = getCalibration()
 plt.plot(floorVector)
 plt.show()
 
