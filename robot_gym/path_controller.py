@@ -97,6 +97,19 @@ class MPCController(Controller):
         if (abs(base_or0 - angle) < 0.1):
             return True
 
+    def get_angle(self,base_position0, base_position1 ):
+        desierdAngle = 0
+        if(DESTINATION_VECTOR[0]-base_position0 == 0.):
+            desierdAngle = math.pi
+        else:
+            desierdAngle = math.atan((DESTINATION_VECTOR[1]-base_position1)/(DESTINATION_VECTOR[0]-base_position0))
+        if ((desierdAngle < 0) & (DESTINATION_VECTOR[1] > 0)):
+            desierdAngle+=math.pi
+        elif (DESTINATION_VECTOR[1] < 0) & (DESTINATION_VECTOR[0] < 0):
+            desierdAngle-=math.pi
+        return desierdAngle
+
+
     def update_controller_params(self, params):
         if len(params) == 3:
             DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], speed = params
@@ -118,28 +131,18 @@ class MPCController(Controller):
         #fix getting angle depending on current pos so that you can input more points
         if(start % 2 == 0):
             desierdAngle = 0
-            if(DESTINATION_VECTOR[0]-base_position[0] == 0.):
-                desierdAngle = math.pi
-            else:
-                desierdAngle = math.atan((DESTINATION_VECTOR[1]-base_position[1])/(DESTINATION_VECTOR[0]-base_position[0]))
-            if ((desierdAngle < 0) & (DESTINATION_VECTOR[1] > 0)):
-                desierdAngle+=math.pi
-            elif (DESTINATION_VECTOR[1] < 0) & (DESTINATION_VECTOR[0] < 0):
-                desierdAngle-=math.pi
+            desierdAngle = self.get_angle(base_position[0], base_position[1])
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1]) is not None:
                 arrive = self.arrived(base_position[0], base_position[1])
-                print(arrive)
+                #print(arrive)
             if(not arrive):
                 if self.angled(base_orientation[2], desierdAngle) is not None:
                     angle = self.angled(base_orientation[2], desierdAngle)
-                    print(angle)
+                    #print(angle)
                 if(angle):
                         vx = speed
                 if((DESTINATION_VECTOR[1] < 0)):
-                    print(base_orientation[2])
-                    print(desierdAngle)
-                    print("-------")
                     if ((base_orientation[2] >= desierdAngle)):
                         wz = -0.5
                         #print(base_orientation[2])
