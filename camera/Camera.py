@@ -19,7 +19,7 @@ pipeline.start(config)
 
 def getFrame():
     #Wait for frames
-    for i in range(0,4):
+    for i in range(0,8):
         frames = pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         if not depth_frame:
@@ -43,12 +43,12 @@ def calibration(image):
     return floorV
 
 def findObstacle(image, floorV):
-    obsM = np.zeros((x,y))
+    obsM = np.zeros((y,x))
     for i in range(0,x):
         for j in range(0,y):
             if image[j,i] < (floorV[j] - margin) and image[j,i] > 0:
                 obsM[j,i] = 1
-                numObs = numObs + 1
+                #numObs = numObs + 1
     return obsM
 
 def saveCalibration(floorV):
@@ -60,6 +60,8 @@ def saveCalibration(floorV):
 def getCalibration():
     calFile = open("calibration.txt", 'r')
     floorV = calFile.read().split()
+    for i in range(y):
+        floorV[i] = float(floorV[i])
     return floorV
 
 
@@ -71,8 +73,13 @@ floorVector = getCalibration()
 plt.plot(floorVector)
 plt.show()
 
-depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=0.03), cv2.COLORMAP_JET)
+obstacleIm = findObstacle(im, floorVector)
+
+depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=0.03), cv2.COLORMAP_JET)
+colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=0.03), cv2.COLORMAP_JET)
+
+images = np.hstack((depthColormap, colorObstacle))
 
 cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-cv2.imshow('RealSense', depth_colormap)
+cv2.imshow('RealSense', images)
 cv2.waitKey(600)
