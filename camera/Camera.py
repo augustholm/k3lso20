@@ -10,7 +10,7 @@ x = 640
 y = 480
 floorLimit = 240
 margin = 10
-numObs = 0
+numObs = -1
 
 config.enable_stream(rs.stream.depth, x, y, rs.format.z16, 30)
 
@@ -44,12 +44,13 @@ def calibration(image):
 
 def findObstacle(image, floorV):
     obsM = np.zeros((y,x))
+    num = 0
     for i in range(0,x):
         for j in range(0,y):
-            if image[j,i] < (floorV[j] - margin) and image[j,i] > 0:
+            if (floorV[j] - margin) > image[j,i] > 0:
                 obsM[j,i] = 1
-                #numObs = numObs + 1
-    return obsM
+                num += 1
+    return obsM, num
 
 def saveCalibration(floorV):
     calFile = open("calibration.txt", 'w')
@@ -73,10 +74,11 @@ floorVector = getCalibration()
 plt.plot(floorVector)
 plt.show()
 
-obstacleIm = findObstacle(im, floorVector)
+obstacleIm, numObs = findObstacle(im, floorVector)
+print(numObs)
 
 depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=0.03), cv2.COLORMAP_JET)
-colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=0.03), cv2.COLORMAP_JET)
+colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=30), cv2.COLORMAP_JET)
 
 images = np.hstack((depthColormap, colorObstacle))
 
