@@ -12,7 +12,9 @@ from robot_gym.controllers.controller import Controller
 from robot_gym.controllers.mpc.kinematics import Kinematics
 from robot_gym.model.robots import simple_motor
 
-DESTINATION_VECTOR = [0, 0]
+DESTINATION_VECTOR = [[0, 0], [0, 0]]
+START_ANGLE = 0
+INDEX = 0
 arrive = False
 angle = False
 
@@ -77,47 +79,55 @@ class MPCController(Controller):
         x_id = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
         y_id = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
         speed_id = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
+        x_id2 = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
+        y_id2 = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
+        speed_id2 = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
         started = pybullet_client.addUserDebugParameter("Start/Stop", 1,0,1)
-        return x_id, y_id, speed_id, started
+        return x_id, y_id, speed_id, x_id2, y_id2, speed_id2, started
 
     @staticmethod
     def read_ui_params(pybullet_client, ui): #Setting speeds from UI
-        x_id, y_id, speed_id, started = ui
+        x_id, y_id, speed_id, x_id2, y_id2, speed_id2, started = ui
         xcoord = pybullet_client.readUserDebugParameter(x_id)
         ycoord = pybullet_client.readUserDebugParameter(y_id)
         speed = pybullet_client.readUserDebugParameter(speed_id)
+        xcoord2 = pybullet_client.readUserDebugParameter(x_id2)
+        ycoord2 = pybullet_client.readUserDebugParameter(y_id2)
+        speed2 = pybullet_client.readUserDebugParameter(speed_id2)
         start = pybullet_client.readUserDebugParameter(started)
-        return xcoord, ycoord, speed, start
+        return xcoord, ycoord, speed, xcoord2, ycoord2, speed2, start
     
-    def arrived(self, base_pos0, base_pos1):
-        if (abs(base_pos0 - DESTINATION_VECTOR[0]) < 0.1) & (abs(base_pos1 - DESTINATION_VECTOR[1]) < 0.1):
+    def arrived(self, base_pos0, base_pos1, destination):
+        if (abs(base_pos0 - destination[0]) < 0.1) & (abs(base_pos1 - destination[1]) < 0.1):
             return True
         
-    def angled(self, base_or0, angle):
+    def isAngled(self, base_or0, angle):
         if (abs(base_or0 - angle) < 0.1):
             return True
 
-    def get_angle(self,base_position0, base_position1 ):
+    def get_angle(self,base_position0, base_position1, startOrient, destination ):
         desierdAngle = 0
-        if(DESTINATION_VECTOR[0]-base_position0 == 0.):
+        if(destination[0]-base_position0 == 0.):
             desierdAngle = math.pi
         else:
-            desierdAngle = math.atan((DESTINATION_VECTOR[1]-base_position1)/(DESTINATION_VECTOR[0]-base_position0))
-        if ((desierdAngle < 0) & (DESTINATION_VECTOR[1] > 0)):
+            desierdAngle = math.atan((destination[1]-base_position1)/(destination[0]-base_position0))
+        if ((desierdAngle < 0) & (destination[1] > 0)):
             desierdAngle+=math.pi
-        elif (DESTINATION_VECTOR[1] < 0) & (DESTINATION_VECTOR[0] < 0):
+        elif (destination[1] < 0) & (destination[0] < 0):
             desierdAngle-=math.pi
+
+        desierdAngle -= startOrient
         return desierdAngle
 
 
     def update_controller_params(self, params):
-        if len(params) == 3:
-            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], speed = params
+        if len(params) == 6:
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], speed, DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], speed2 = params
             vx = 0.
             wz = 0.
             vy = 0.
         else:
-            DESTINATION_VECTOR[0], DESTINATION_VECTOR[1], speed, start = params
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], speed, DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], speed2, start = params
             vx = 0.
             wz = 0.
             vy = 0.
@@ -127,22 +137,23 @@ class MPCController(Controller):
         base_orientation = self._pybullet_client.getEulerFromQuaternion(base_orientation)
         global arrive 
         global angle
-        
+        global START_ANGLE
+        global INDEX
+        desierdAngle = 0
+        desierdAngle = self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX])
         #fix getting angle depending on current pos so that you can input more points
         if(start % 2 == 0):
-            desierdAngle = 0
-            desierdAngle = self.get_angle(base_position[0], base_position[1])
             #set speed if pos is not desierd pos
-            if self.arrived(base_position[0], base_position[1]) is not None:
-                arrive = self.arrived(base_position[0], base_position[1])
+            if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
+                arrive = self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
                 #print(arrive)
             if(not arrive):
-                if self.angled(base_orientation[2], desierdAngle) is not None:
-                    angle = self.angled(base_orientation[2], desierdAngle)
+                if self.isAngled(base_orientation[2], desierdAngle) is not None:
+                    angle = self.isAngled(base_orientation[2], desierdAngle)
                     #print(angle)
                 if(angle):
                         vx = speed
-                if((DESTINATION_VECTOR[1] < 0)):
+                if((DESTINATION_VECTOR[INDEX][1] < 0)):
                     if ((base_orientation[2] >= desierdAngle)):
                         wz = -0.5
                         #print(base_orientation[2])
@@ -151,6 +162,12 @@ class MPCController(Controller):
                 else:
                     if ((base_orientation[2] <= desierdAngle)):
                         wz = 0.5
+            elif(arrive):
+                INDEX = 1
+                START_ANGLE = base_orientation[2]
+                print(self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX]))
+                #arrive = False
+
             #print(base_orientation)
         # add robot ctrl offset
         lin_speed = [
