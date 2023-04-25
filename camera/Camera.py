@@ -42,7 +42,7 @@ def calibration(image):
     return floorV
 
 def findObstacle(image, floorV):
-    obsVL = np.zeros((2,x*x))
+    obsVL = np.zeros((2,x*y))
     numObs = 0
     obsM = np.zeros((y,x))
     for i in range(0,x):
@@ -77,7 +77,10 @@ floorVector = getCalibration()
 plt.plot(floorVector)
 plt.show()
 
-obstacleIm = findObstacle(im, floorVector)
+obstacleIm, obstacleV = findObstacle(im, floorVector)
+
+plt.plot(obstacleV)
+plt.show()
 
 depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=0.03), cv2.COLORMAP_JET)
 colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=30), cv2.COLORMAP_JET)
