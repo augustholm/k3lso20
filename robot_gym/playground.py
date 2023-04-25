@@ -11,7 +11,8 @@ from robot_gym.io.gamepad import xbox_one_pad
 from robot_gym.model.robots import simple_motor
 from robot_gym.model.robots.ghost import ghost
 from robot_gym.model.robots.k3lso import k3lso
-
+	
+from robot_gym.core import sim_constants        # TEST
 
 class Playground:
 
@@ -115,6 +116,7 @@ class Playground:
         current_time = start_time
         while self._sim.pybullet_client.isConnected():
             # time.sleep(0.0008) # on some fast computer, works better with sleep on real robot?
+            time.sleep(0.001)   #TEST: minimize lagging in simulation
             start_time_robot = current_time
             start_time_wall = time.time()
             # update the sim
@@ -139,6 +141,13 @@ class Playground:
             if actual_duration < expected_duration:
                 time.sleep(expected_duration - actual_duration)
             # print("actual_duration=", actual_duration)
+#TEST
+            # set robot as target position, works but lags
+            self._sim.pybullet_client.resetDebugVisualizerCamera(sim_constants.CAMERA_DISTANCE,
+                                                    sim_constants.CAMERA_YAW,
+                                                    sim_constants.CAMERA_PITCH,
+                                                    self._sim.robot.GetBasePosition()) # TEST
+#END
 
     def _reset(self, args):
         if args is None:
