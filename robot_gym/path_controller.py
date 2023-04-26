@@ -28,6 +28,14 @@ class MPCController(Controller):
         self._mpc_controller = self._setup_controller(self._robot)
         self._kinematics = Kinematics(self._robot)
         self._pybullet_client = robot.pybullet_client
+        global START_ANGLE
+        global INDEX
+        global arrive
+        global angle
+        START_ANGLE = 0
+        INDEX = 0
+        arrive = False
+        angle = False
 
     @property
     def kinematics_model(self):
@@ -100,6 +108,8 @@ class MPCController(Controller):
     def arrived(self, base_pos0, base_pos1, destination):
         if (abs(base_pos0 - destination[0]) < 0.1) & (abs(base_pos1 - destination[1]) < 0.1):
             return True
+        #else:
+            #return False
         
     def isAngled(self, base_or0, angle):
         if (abs(base_or0 - angle) < 0.1):
@@ -111,12 +121,12 @@ class MPCController(Controller):
             desierdAngle = math.pi
         else:
             desierdAngle = math.atan((destination[1]-base_position1)/(destination[0]-base_position0))
-        if ((desierdAngle < 0) & (destination[1] > 0)):
+        if ((desierdAngle < 0) & (destination[1]-base_position1 > 0)):
             desierdAngle+=math.pi
-        elif (destination[1] < 0) & (destination[0] < 0):
+        elif (destination[1] < 0) & (destination[0]-base_position0 < 0):
             desierdAngle-=math.pi
 
-        desierdAngle -= startOrient
+        #desierdAngle += startOrient
         return desierdAngle
 
 
@@ -146,14 +156,14 @@ class MPCController(Controller):
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
                 arrive = self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
-                #print(arrive)
+                print(arrive)
             if(not arrive):
                 if self.isAngled(base_orientation[2], desierdAngle) is not None:
                     angle = self.isAngled(base_orientation[2], desierdAngle)
                     #print(angle)
                 if(angle):
                         vx = speed
-                if((DESTINATION_VECTOR[INDEX][1] < 0)):
+                if((DESTINATION_VECTOR[INDEX][1]-base_position[1] < 0)):
                     if ((base_orientation[2] >= desierdAngle)):
                         wz = -0.5
                         #print(base_orientation[2])
@@ -163,8 +173,9 @@ class MPCController(Controller):
                     if ((base_orientation[2] <= desierdAngle)):
                         wz = 0.5
             elif(arrive):
-                INDEX = 1
+                INDEX = (INDEX + 1)% len(DESTINATION_VECTOR)
                 START_ANGLE = base_orientation[2]
+                #angle = False
                 print(self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX]))
                 #arrive = False
 
@@ -190,6 +201,10 @@ class MPCController(Controller):
         return hybrid_action
 
     def reset(self):
+        global arrive
+        global angle
+        arrive = False
+        angle = False   
         self._mpc_controller.reset()
 
     @staticmethod
