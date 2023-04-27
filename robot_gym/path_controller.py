@@ -123,10 +123,10 @@ class MPCController(Controller):
             desierdAngle = math.atan((destination[1]-base_position1)/(destination[0]-base_position0))
         if ((desierdAngle < 0) & (destination[1]-base_position1 > 0)):
             desierdAngle+=math.pi
-        elif (destination[1] < 0) & (destination[0]-base_position0 < 0):
+        elif (destination[1]-base_position1 < 0) & (destination[0]-base_position0 < 0):
             desierdAngle-=math.pi
 
-        #desierdAngle += startOrient
+        #desierdAngle -= startOrient
         return desierdAngle
 
 
@@ -156,11 +156,15 @@ class MPCController(Controller):
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
                 arrive = self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
-                print(arrive)
+                #print(arrive)
             if(not arrive):
+                if(INDEX == 1):
+                    print(base_orientation[2])
+                    print(desierdAngle)
+                    print("-----------")
                 if self.isAngled(base_orientation[2], desierdAngle) is not None:
                     angle = self.isAngled(base_orientation[2], desierdAngle)
-                    #print(angle)
+                    
                 if(angle):
                         vx = speed
                 if((DESTINATION_VECTOR[INDEX][1]-base_position[1] < 0)):
@@ -175,9 +179,10 @@ class MPCController(Controller):
             elif(arrive):
                 INDEX = (INDEX + 1)% len(DESTINATION_VECTOR)
                 START_ANGLE = base_orientation[2]
-                #angle = False
-                print(self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX]))
-                #arrive = False
+                desierdAngle = self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX])
+                print(desierdAngle)
+                angle = False
+                arrive = False
 
             #print(base_orientation)
         # add robot ctrl offset
