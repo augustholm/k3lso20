@@ -412,9 +412,6 @@ class Robot:
 
     def update_equipment(self):
         if "cams" in self._equip:
-            #self._equip["cams"][self._equip["default_cam"]].get_camera_image(self._pybullet_client)
-            
-#TEST
             cam_x, cam_y, cam_z = self.GetBasePosition()                                   
             cam_x = cam_x + 0.22 # placing the camera to the front
 
@@ -429,15 +426,8 @@ class Robot:
             position = cam_x, cam_y, cam_z  
             target   = target_x, target_y, target_z
     
-            #print("position ", position)   
-            #print("target ", target)
             self._equip["cams"][self._equip["default_cam"]].get_camera_image(self._pybullet_client,
                                                                              position, target)            
-            #test
-            """"
-            print("position ", self.GetBasePosition())        # 0.0018826149387620348, 0.0010417347719996807, 0.4538295824810519)
-            print("orientation ", self.GetBaseRollPitchYaw()) # (-0.007656822769590739, -0.007679255757245764, -0.0022513244503836417)
-            """
-#END
+    
     def get_default_camera(self):
         return self._equip["cams"][self._equip["default_cam"]]
