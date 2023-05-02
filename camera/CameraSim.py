@@ -1,31 +1,15 @@
-import pyrealsense2 as rs
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2
 
-pipeline = rs.pipeline()
-config = rs.config()
-
-x = 640
-y = 480
-floorLimit = 240
-margin = 10
-
-config.enable_stream(rs.stream.depth, x, y, rs.format.z16, 30)
-
-pipeline.start(config)
-
+x = 320
+y = 240
+floorLimit = 120
+margin = 0.01
 
 def getFrame():
-    #Wait for frames
-    for i in range(0,8):
-        frames = pipeline.wait_for_frames()
-        depthFrame = frames.get_depth_frame()
-        if not depthFrame:
-            print("No frame")
-            return
-
-    depthImage = np.asanyarray(depthFrame.get_data())
+    #Get frame from camera
+    depthImage = np.loadtxt('depth_object.csv', delimiter=',')
     return depthImage
 
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -66,17 +50,20 @@ im = getFrame()
 
 #floorVector = calibration(im)
 #saveCalibration(floorVector)
-floorVector = getCalibration()
+#floorVector = getCalibration()
+floorMetrix = np.loadtxt('depth_plane.csv', delimiter=',')
+floorVector = floorMetrix[:,1]
+print(floorVector)
 plt.plot(floorVector)
 plt.show()
 
 obstacleIm = findObstacle(im, floorVector)
 
-depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=0.03), cv2.COLORMAP_JET)
-colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=30), cv2.COLORMAP_JET)
+depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=30), cv2.COLORMAP_JET)
+colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=300), cv2.COLORMAP_JET)
 
 images = np.hstack((depthColormap, colorObstacle))
 
 cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
 cv2.imshow('RealSense', images)
-cv2.waitKey(600)
+cv2.waitKey(6000)
