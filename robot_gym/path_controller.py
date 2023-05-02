@@ -13,8 +13,8 @@ from robot_gym.controllers.mpc.kinematics import Kinematics
 from robot_gym.model.robots import simple_motor
 
 DESTINATION_VECTOR = [[0, 0], [0, 0]]
+START_ANGLE = 0
 INDEX = 0
-
 arrive = False
 angle = False
 
@@ -32,10 +32,10 @@ class MPCController(Controller):
         global INDEX
         global arrive
         global angle
+        START_ANGLE = 0
         INDEX = 0
         arrive = False
         angle = False
-        
 
     @property
     def kinematics_model(self):
@@ -115,7 +115,7 @@ class MPCController(Controller):
         if (abs(base_or0 - angle) < 0.1):
             return True
 
-    def get_angle(self,base_position0, base_position1, destination ):
+    def get_angle(self,base_position0, base_position1, startOrient, destination ):
         desierdAngle = 0
         if(destination[0]-base_position0 == 0.):
             desierdAngle = math.pi
@@ -149,19 +149,19 @@ class MPCController(Controller):
         global angle
         global START_ANGLE
         global INDEX
-        global p1
-        global p2
         desierdAngle = 0
-        desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
+        desierdAngle = self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX])
         #fix getting angle depending on current pos so that you can input more points
         if(start % 2 == 0):
-            self._pybullet_client.addUserDebugLine([0,0,0], [DESTINATION_VECTOR[0][0],DESTINATION_VECTOR[0][1],0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
-            self._pybullet_client.addUserDebugLine([DESTINATION_VECTOR[0][0],DESTINATION_VECTOR[0][1],0], [DESTINATION_VECTOR[1][0],DESTINATION_VECTOR[1][1],0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
                 arrive = self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
                 #print(arrive)
             if(not arrive):
+                if(INDEX == 1):
+                    print(base_orientation[2])
+                    print(desierdAngle)
+                    print("-----------")
                 if self.isAngled(base_orientation[2], desierdAngle) is not None:
                     angle = self.isAngled(base_orientation[2], desierdAngle)
                     
@@ -178,7 +178,8 @@ class MPCController(Controller):
                         wz = 0.5
             elif(arrive):
                 INDEX = (INDEX + 1)% len(DESTINATION_VECTOR)
-                desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
+                START_ANGLE = base_orientation[2]
+                desierdAngle = self.get_angle(base_position[0], base_position[1], START_ANGLE, DESTINATION_VECTOR[INDEX])
                 print(desierdAngle)
                 angle = False
                 arrive = False
