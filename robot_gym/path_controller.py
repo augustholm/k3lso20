@@ -13,6 +13,7 @@ from robot_gym.controllers.mpc.kinematics import Kinematics
 from robot_gym.model.robots import simple_motor
 
 DESTINATION_VECTOR = [[0, 0], [0, 0]]
+SPEED_VECTOR = [0.5, 0.5]
 INDEX = 0
 
 arrive = False
@@ -112,7 +113,7 @@ class MPCController(Controller):
             #return False
         
     def isAngled(self, base_or0, angle):
-        if (abs(base_or0 - angle) < 0.1):
+        if (abs(base_or0 - angle) < 0.05):
             return True
 
     def get_angle(self,base_position0, base_position1, destination ):
@@ -132,12 +133,12 @@ class MPCController(Controller):
 
     def update_controller_params(self, params):
         if len(params) == 6:
-            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], speed, DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], speed2 = params
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0], DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], SPEED_VECTOR[1] = params
             vx = 0.
             wz = 0.
             vy = 0.
         else:
-            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], speed, DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], speed2, start = params
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0], DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], SPEED_VECTOR[1], start = params
             vx = 0.
             wz = 0.
             vy = 0.
@@ -166,7 +167,7 @@ class MPCController(Controller):
                     angle = self.isAngled(base_orientation[2], desierdAngle)
                     
                 if(angle):
-                        vx = speed
+                        vx = SPEED_VECTOR[INDEX]
                 if((DESTINATION_VECTOR[INDEX][1]-base_position[1] < 0)):
                     if ((base_orientation[2] >= desierdAngle)):
                         wz = -0.5
