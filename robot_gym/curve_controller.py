@@ -117,7 +117,6 @@ class MPCController(Controller):
             return True
 
     def get_angle(self,base_position0, base_position1, destination ):
-
         desierdAngle = math.atan((destination[1]-base_position1)/(destination[0]-base_position0))
         if ((desierdAngle < 0) & (destination[1]-base_position1 > 0)):
             desierdAngle+=math.pi
@@ -160,23 +159,23 @@ class MPCController(Controller):
                 if self.isAngled(base_orientation[2], desierdAngle) is not None:
                     angle = self.isAngled(base_orientation[2], desierdAngle)
                     
-                if(angle):
-                        vx = SPEED_VECTOR[INDEX]
-                else:
+                vx = SPEED_VECTOR[INDEX]
+                if(not angle):
                     if((desierdAngle < base_orientation[0]) & (not ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0])))):
-                        wz = -0.5
+                        wz = -SPEED_VECTOR[INDEX]*math.pi/(math.sqrt(DESTINATION_VECTOR[0][0]**2 + DESTINATION_VECTOR[0][1]**2))
                         #print("-------")
                             
                     elif((desierdAngle > base_orientation[0]) | ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0]))):
-                        wz = 0.5
+                        wz = SPEED_VECTOR[INDEX]*math.pi/(math.sqrt(DESTINATION_VECTOR[0][0]**2 + DESTINATION_VECTOR[0][1]**2))
             elif(arrive):
                 INDEX = (INDEX + 1)% len(DESTINATION_VECTOR)
                 desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
                 print(desierdAngle)
+                print(math.atan((DESTINATION_VECTOR[INDEX][1]-base_position[1])/(DESTINATION_VECTOR[INDEX][0]-base_position[0])))
                 angle = False
                 arrive = False
-
-            #print(base_orientation)
+                print(base_orientation[2])
+                print((desierdAngle > base_orientation[0]) | ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0])))
         # add robot ctrl offset
         lin_speed = [
             vx + self._constants.VX_OFFSET,
