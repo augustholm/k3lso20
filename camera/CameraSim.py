@@ -38,7 +38,7 @@ def findObstacle(image, floorV):
                 numObs += 1
 
     obsV = obsVL[0:1, 0:numObs]
-    return obsM
+    return obsM, obsV
 
 def saveCalibration(floorV):
     calFile = open("calibration.txt", 'w')
@@ -64,7 +64,8 @@ print(floorVector)
 plt.plot(floorVector)
 plt.show()
 
-obstacleIm = findObstacle(im, floorVector)
+obstacleIm, obstacleV = findObstacle(im, floorVector)
+print(obstacleV)
 
 depthColormap = cv2.applyColorMap(cv2.convertScaleAbs(im, alpha=30), cv2.COLORMAP_JET)
 colorObstacle = cv2.applyColorMap(cv2.convertScaleAbs(obstacleIm, alpha=300), cv2.COLORMAP_JET)
