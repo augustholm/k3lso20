@@ -26,11 +26,18 @@ def calibration(image):
     return floorV
 
 def findObstacle(image, floorV):
+    obsVL = np.zeros((2, x * y))
+    numObs = 0
     obsM = np.zeros((y,x))
     for i in range(0,x):
         for j in range(0,y):
             if (floorV[j] - margin) > image[j,i] > 0:
                 obsM[j,i] = 1
+                obsVL[0, numObs] = image[j, i]
+                # obsVL[1,numObs] = 0 #Add angle to obstacle from camera - needs to be calculated
+                numObs += 1
+
+    obsV = obsVL[0:1, 0:numObs]
     return obsM
 
 def saveCalibration(floorV):
