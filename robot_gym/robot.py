@@ -426,7 +426,7 @@ class Robot:
             position = cam_x, cam_y, cam_z  
             target   = target_x, target_y, target_z
 
-            w, h, rgb, deth, seg, pm, vm = self._equip["cams"][self._equip["default_cam"]].get_camera_image(self._pybullet_client, position, target)            
+            w, h, rgb, deth, seg = self._equip["cams"][self._equip["default_cam"]].get_camera_image(self._pybullet_client, position, target)            
 
             # MAKE VIRTIAL IMAGE DATA INTO CVS FILE
             data = np.asarray(deth)
