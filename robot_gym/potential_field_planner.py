@@ -160,7 +160,7 @@ def draw_heatmap(data):
     plt.pcolor(data, vmax=100.0, cmap=plt.cm.Blues)
 
 
-def get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, debug=False):
+def get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, robot_x, robot_y, debug=False):
     """
     :param target_x: goal x position [m]
     :param target_y: goal y position [m]
@@ -171,10 +171,10 @@ def get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, debug=False
     :return: path x list, path y list
     """
     grid_size = 0.5  # potential grid size [m]
-    robot_radius = 0.25  # robot radius [m]
+    robot_radius = 0.75 #0.25  # robot radius [m]
 
     # assume robot pos absolute
-    robot_x, robot_y = 0., 0.
+    #robot_x, robot_y = 0., 0.
 
     # consider robot body
     # TODO
