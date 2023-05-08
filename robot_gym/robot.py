@@ -4,6 +4,7 @@ import math
 from robot_gym.model.equipment import camera
 from robot_gym.util import pybullet_data
 
+from robot_gym.gym.envs.go_to.path_planner import potential_field_planner
 
 class Robot:
 
@@ -429,9 +430,40 @@ class Robot:
             w, h, rgb, deth, seg = self._equip["cams"][self._equip["default_cam"]].get_camera_image(self._pybullet_client, position, target)            
 
             # MAKE VIRTIAL IMAGE DATA INTO CVS FILE
+            """"
             data = np.asarray(deth)
             np.savetxt('depth_object.csv', data, delimiter=',')      # save numpy array as csv file
             data = np.loadtxt('depth_object.csv', delimiter=',')     # load numpy array from csv file
+            """
+
+            # Get indices of the segmented object
+            im = np.array(seg)
+            ob = 1
+            ob_x, ob_y = np.where(im == ob)          
+            obstacles_x_list = ob_x.tolist()       
+            obstacles_y_list = ob_y.tolist()
+
+            # Check if there are any objects
+            if len(obstacles_x_list) == 0:
+                print("Obstacles not found!")
+                # obstacles_x_list: [AREA_WIDTH + 1.] --> 6 if object not found
+                # obstacles_y_list: [AREA_WIDTH + 1.]
+            else:
+                print("Found obstacle!")
+                depth_list = []
+                for i in range(len(obstacles_x_list)):
+                    pixel_y = obstacles_y_list[i]
+                    pixel_x = obstacles_x_list[i]
+                    depth = deth[pixel_x][pixel_y]
+                    depth_list.append(depth)
+                arg_min = np.array(depth_list).argmin()
+                depth = depth_list[arg_min]
+                obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth/2] ,[cam_y + math.sin(yaw) * distance * depth/2]
+
+            # Path planner 
+            target_x, target_y = 5, 0       # TODO specify this from UI --> bring planned path to path_controller 
+            path = potential_field_planner.get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, robot_x=cam_x, robot_y=cam_y, debug=False)          
+            print("path: ", path) 
 
     def get_default_camera(self):
         return self._equip["cams"][self._equip["default_cam"]]
