@@ -5,6 +5,7 @@ from robot_gym.model.equipment import camera
 from robot_gym.util import pybullet_data
 
 from robot_gym.gym.envs.go_to.path_planner import potential_field_planner
+from robot_gym.controllers.mpc import obstacle_controller
 
 class Robot:
 
@@ -458,10 +459,11 @@ class Robot:
                     depth_list.append(depth)
                 arg_min = np.array(depth_list).argmin()
                 depth = depth_list[arg_min]
-                obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth/2] ,[cam_y + math.sin(yaw) * distance * depth/2]
+                obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth/2], [cam_y + math.sin(yaw) * distance * depth/2]
 
             # Path planner 
-            target_x, target_y = 5, 0       # TODO specify this from UI --> bring planned path to path_controller 
+            #target_x, target_y = 5, 0       # TODO specify this from UI --> bring planned path to path_controller
+            target_x, target_y = obstacle_controller.DESTINATION_VECTOR[0][0], obstacle_controller.DESTINATION_VECTOR[0][1]
             path = potential_field_planner.get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, robot_x=cam_x, robot_y=cam_y, debug=False)          
             print("path: ", path) 
 
