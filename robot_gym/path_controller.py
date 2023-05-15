@@ -168,6 +168,7 @@ class MPCController(Controller):
         global INDEX
         global start_time
         global timerStarted
+        global path
 
 
 
@@ -184,7 +185,7 @@ class MPCController(Controller):
             if (not timerStarted):
                 start_time = time.time()    #Startar ett tidtagarur
                 timerStarted = True
-            #self._pybullet_client.addUserDebugLine([0, 0, 0], [DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], 0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
+            #self._pybullet_client.addUserDebugLine([0, 0, 0], [DESTINATION_VECTOR[0][INDEX - 1], DESTINATION_VECTOR[0][INDEX], 0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
             #self._pybullet_client.addUserDebugLine([DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], 0], [DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], 0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
@@ -204,24 +205,26 @@ class MPCController(Controller):
                     elif desierdAngle > base_orientation[0]: #| ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0]))):
                         wz = 0.5
             elif(arrive):
-                if INDEX > len(DESTINATION_VECTOR):
+                #if INDEX > len(DESTINATION_VECTOR):
                     #DESTINATION_VECTOR[INDEX - 1]
-                    INDEX = 0
-                    arrive = True
+                #    INDEX = 0
+                #   arrive = True
 
-                else:
-                    INDEX = INDEX + 1 #% len(DESTINATION_VECTOR)
+                #else:
                     #if (INDEX + 1) % 2:
                     #path = Robot.update_equipment_at_arrival(self)      #Den sparar inte gamla hinder så den kan hamna i en loop lätt
 
                     #print("Path: ", path)
-                    print("Destination Vector: ", DESTINATION_VECTOR)
+                    #print("Destination Vector: ", DESTINATION_VECTOR)
                     #pathLength = len(path[0])
                     if len(DESTINATION_VECTOR) == 2:
-                        path = Robot.update_equipment_at_arrival(
-                            self)  # Den sparar inte gamla hinder så den kan hamna i en loop lätt
-                        for INDEX in range(len(path)):
+                        #path = Robot.update_equipment_at_arrival(
+                            #self)  # Den sparar inte gamla hinder så den kan hamna i en loop lätt
+                        for INDEX in range(len(path[0])):
                             DESTINATION_VECTOR.append([path[0][INDEX], path[1][INDEX]])
+                        print(DESTINATION_VECTOR)
+                    INDEX = INDEX + 1 #% len(DESTINATION_VECTOR)
+
                     #print(DESTINATION_VECTOR[INDEX])
                     desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
                     #print(desierdAngle)
