@@ -9,7 +9,7 @@ config = rs.config()
 x = 640
 y = 480
 floorLimit = 240
-margin = 10
+margin = 100
 
 config.enable_stream(rs.stream.depth, x, y, rs.format.z16, 30)
 
@@ -33,6 +33,7 @@ def calibration(image):
     #return floorV
     for i in range(floorLimit, y):
         floorV[i] = image[i, int(x/2)]
+    floorV[0:floorLimit] = floorV[250]
     return floorV
 
 def findObstacle(image, floorV):
