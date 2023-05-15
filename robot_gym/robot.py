@@ -5,7 +5,7 @@ from robot_gym.model.equipment import camera
 from robot_gym.util import pybullet_data
 
 from robot_gym.gym.envs.go_to.path_planner import potential_field_planner
-from robot_gym.controllers.mpc import obstacle_controller
+from robot_gym.controllers.mpc import path_controller
 import statistics
 
 class Robot:
@@ -440,16 +440,88 @@ class Robot:
 
 
             # MARK ONES IN "SEG" AS OBJECT
+            #im = np.array(seg)
+            #ob = 1
+            #ob_x, ob_y = np.where(im == ob)         # shape: (21218,)
+            #obstacles_x_list = ob_x.tolist()        # long list: (..., )
+            #obstacles_y_list = ob_y.tolist()
+            #row_middle = len(seg[0])/2              # 320 / 2 = 160
+
+            #if len(obstacles_x_list) == 0:
+                #print("Obstacles NOT found!")
+                #print("1. obstacles_x_list, obstacles_y_list ", obstacles_x_list, obstacles_y_list)
+                # obstacles_x_list: [AREA_WIDTH + 1.] --> 6 if object not found
+                # obstacles_y_list: [AREA_WIDTH + 1.]
+            #else:
+                #print("Found obstacle!")
+                #depth_min = 1
+                #for i in range(len(obstacles_x_list)):
+                    #pixel_y = obstacles_y_list[i]
+                    #pixel_x = obstacles_x_list[i]
+                    #depth = deth[pixel_x][pixel_y]
+                    #if depth < depth_min:
+                        #depth_min = depth
+                #pixel_min_y = statistics.median(obstacles_y_list)
+                #cor_1 = 0.25
+                #cor_2 = 2
+                #print("pixel_min_y", pixel_min_y)
+                #if not row_middle -20 < pixel_min_y < row_middle +20:  # check whether object is at the middle of the image
+                    #if row_middle < pixel_min_y:
+                        #obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw-cor_1) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw-cor_1) * distance * depth_min/cor_2]
+                        #print("2. obstacles_list RIGHT side ", obstacles_x_list, obstacles_y_list)
+                    #else:
+                        #obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw+cor_1) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw+cor_1) * distance * depth_min/cor_2]
+                        #print("3. obstacles_list LEFT side", obstacles_x_list, obstacles_y_list)
+                #else:
+                    #obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw) * distance * depth_min/cor_2]
+                    #print ("4. obstacles_list MIDDLE", obstacles_x_list, obstacles_y_list)
+            
+            # Path planner 
+            #target_x, target_y = path_controller.DESTINATION_VECTOR[0][0], path_controller.DESTINATION_VECTOR[0][1]
+            #path = potential_field_planner.get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, robot_x=cam_x, robot_y=cam_y, debug=False)
+            #print("path: ", path)
+
+
+
+    def update_equipment_at_arrival(self):
+        #self._load_equipment()
+        if "cams" in self._equip:
+            cam_x, cam_y, cam_z = self._simulation.robot.GetBasePosition()
+            cam_x = cam_x + 0.22  # placing the camera to the front
+
+            yaw = self._simulation.robot.GetBaseRollPitchYaw()[2]  # third element for yaw
+
+            # compute focusing point of the camera
+            distance = 1.0
+            target_x = cam_x + math.cos(yaw) * distance
+            target_y = cam_y + math.sin(yaw) * distance
+            target_z = cam_z
+
+            position = cam_x, cam_y, cam_z
+            target = target_x, target_y, target_z
+
+            w, h, rgb, deth, seg = self._equip["cams"][self._equip["default_cam"]].get_camera_image(
+                self._pybullet_client, position, target)
+
+            # MAKE VIRTIAL IMAGE DATA INTO CVS FILE
+            """"
+            data = np.asarray(deth)
+            np.savetxt('depth_object.csv', data, delimiter=',')      # save numpy array as csv file
+            data = np.loadtxt('depth_object.csv', delimiter=',')     # load numpy array from csv file
+            """
+
+            # Get indices of the segmented object
+            # MARK ONES IN "SEG" AS OBJECT
             im = np.array(seg)
             ob = 1
-            ob_x, ob_y = np.where(im == ob)         # shape: (21218,)  
-            obstacles_x_list = ob_x.tolist()        # long list: (..., )
+            ob_x, ob_y = np.where(im == ob)  # shape: (21218,)
+            obstacles_x_list = ob_x.tolist()  # long list: (..., )
             obstacles_y_list = ob_y.tolist()
-            row_middle = len(seg[0])/2              # 320 / 2 = 160
+            row_middle = len(seg[0]) / 2  # 320 / 2 = 160
 
             if len(obstacles_x_list) == 0:
                 print("Obstacles NOT found!")
-                print("1. obstacles_x_list, obstacles_y_list ", obstacles_x_list, obstacles_y_list) 
+                print("1. obstacles_x_list, obstacles_y_list ", obstacles_x_list, obstacles_y_list)
                 # obstacles_x_list: [AREA_WIDTH + 1.] --> 6 if object not found
                 # obstacles_y_list: [AREA_WIDTH + 1.]
             else:
@@ -461,25 +533,38 @@ class Robot:
                     depth = deth[pixel_x][pixel_y]
                     if depth < depth_min:
                         depth_min = depth
-                pixel_min_y = statistics.median(obstacles_y_list) 
+                pixel_min_y = statistics.median(obstacles_y_list)
                 cor_1 = 0.25
                 cor_2 = 2
                 print("pixel_min_y", pixel_min_y)
-                if not row_middle -20 < pixel_min_y < row_middle +20:  # check whether object is at the middle of the image
+                if not row_middle - 20 < pixel_min_y < row_middle + 20:  # check whether object is at the middle of the image
                     if row_middle < pixel_min_y:
-                        obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw-cor_1) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw-cor_1) * distance * depth_min/cor_2]
-                        print("2. obstacles_list RIGHT side ", obstacles_x_list, obstacles_y_list) 
-                    else:  
-                        obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw+cor_1) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw+cor_1) * distance * depth_min/cor_2] 
+                        obstacles_x_list, obstacles_y_list = [
+                            cam_x + math.cos(yaw - cor_1) * distance * depth_min / cor_2], [
+                            cam_y + math.sin(yaw - cor_1) * distance * depth_min / cor_2]
+                        print("2. obstacles_list RIGHT side ", obstacles_x_list, obstacles_y_list)
+                    else:
+                        obstacles_x_list, obstacles_y_list = [
+                            cam_x + math.cos(yaw + cor_1) * distance * depth_min / cor_2], [
+                            cam_y + math.sin(yaw + cor_1) * distance * depth_min / cor_2]
                         print("3. obstacles_list LEFT side", obstacles_x_list, obstacles_y_list)
                 else:
-                    obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth_min/cor_2] ,[cam_y + math.sin(yaw) * distance * depth_min/cor_2]
-                    print ("4. obstacles_list MIDDLE", obstacles_x_list, obstacles_y_list)
-            
-            # Path planner 
-            target_x, target_y = obstacle_controller.DESTINATION_VECTOR[0][0], obstacle_controller.DESTINATION_VECTOR[0][1]
-            path = potential_field_planner.get_path(target_x, target_y, obstacles_x_list, obstacles_y_list, robot_x=cam_x, robot_y=cam_y, debug=False)          
-            print("path: ", path) 
+                    obstacles_x_list, obstacles_y_list = [cam_x + math.cos(yaw) * distance * depth_min / cor_2], [
+                        cam_y + math.sin(yaw) * distance * depth_min / cor_2]
+                    print("4. obstacles_list MIDDLE", obstacles_x_list, obstacles_y_list)
+
+            # Path planner
+            target_x, target_y = path_controller.DESTINATION_VECTOR[0][0], path_controller.DESTINATION_VECTOR[0][1]
+            path = potential_field_planner.get_path(target_x, target_y, obstacles_x_list, obstacles_y_list,
+                                                    robot_x=cam_x, robot_y=cam_y, debug=False)
+            print("path: ", path)
+            #print("path: ", path)
+            #path_controller.DESTINATION_VECTOR[0][0] = path[0][1]
+            #path_controller.DESTINATION_VECTOR[0][1] = path[1][1]
+            # print(path_controller.DESTINATION_VECTOR[0][0])
+            # print(path_controller.DESTINATION_VECTOR[0][1])
+        return path
+
 
     def get_default_camera(self):
         return self._equip["cams"][self._equip["default_cam"]]
