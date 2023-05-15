@@ -7,6 +7,8 @@ from robot_gym.core import sim_constants
 
 from robot_gym.model.world.terrain import Terrain
 
+#from robot_gym.model.robots.robot import Robot # TEST: denna gör simuleringen seg
+
 class Simulation:
 
     def __init__(self,
@@ -113,7 +115,7 @@ class Simulation:
                                         z_offset=z_offset)
 
         # setup locomotion controller
-        self._controller_obj = controller_class(self._robot, self.GetTimeSinceReset)
+        self._controller_obj = controller_class(self._robot, self.GetTimeSinceReset, self._mark, self)
 
         self.reset()
         # settle robot down
@@ -224,6 +226,24 @@ class Simulation:
         pybullet_client.resetDebugVisualizerCamera(sim_constants.CAMERA_DISTANCE,
                                                    sim_constants.CAMERA_YAW,
                                                    sim_constants.CAMERA_PITCH,
-                                                   [-0.0035692216365803492, 0.001497387248354023, 0.4526867942381117] #[0, 0, 0]    # target position 
+                                                   #[-0.0035692216365803492, 0.001497387248354023, 0.4526867942381117] #
+                                                   [0, 0, 0]    # target position
                                                    )
-    
+        
+    #     def GetBasePosition(self):
+    #     """Get the position of Rex's base.
+    #     Returns:
+    #       The position of Rex's base.
+    #     """
+    #     position, _ = (self._pybullet_client.getBasePositionAndOrientation(self._quadruped))
+    #     return position
+
+    # def GetBaseRollPitchYaw(self):
+    #     """Get the orientation of Rex's base.
+    #     Returns:
+    #       The orientation of Rex's base.
+    #     """
+    #     _, orient = (self._pybullet_client.getBasePositionAndOrientation(self._quadruped))
+    #     orient = self._pybullet_client.getEulerFromQuaternion(orient)
+    #     #orient = self._pybullet_client.getEulerFromQuaternion(orient)
+    #     return orient
