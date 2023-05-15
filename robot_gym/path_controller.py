@@ -8,27 +8,47 @@ from mpc_controller import openloop_gait_generator, com_velocity_estimator, raib
     torque_stance_leg_controller, locomotion_controller
 
 import math
+import time
 from robot_gym.controllers.controller import Controller
 from robot_gym.controllers.mpc.kinematics import Kinematics
 from robot_gym.model.robots import simple_motor
+from robot_gym.model.robots.robot import Robot
+from robot_gym.model.robots import robot
+from robot_gym.model.equipment import camera
+from robot_gym.model.robots.k3lso import k3lso
 
-DESTINATION_VECTOR = [[0, 0], [0, 0]]
-SPEED_VECTOR = [0.5, 0.5]
+
+#DESTINATION_VECTOR = [[0, 0], [0, 0]]   #Se ifall man kanske bara behöver sätta in en punkt
+DESTINATION_VECTOR = [[0, 0]]
+SPEED_VECTOR = [0.5]
 INDEX = 0
 
 arrive = False
 angle = False
+timerStarted = False
+
 
 class MPCController(Controller):
 
-    MOTOR_CONTROL_MODE = simple_motor.MOTOR_CONTROL_HYBRID
+    MOTOR_CONTROL_MODE = simple_motor.MOTOR_CONTROL_HYBRID  #Undrar vad skillnaden är om man byter den här
 
-    def __init__(self, robot, get_time_since_reset):
+    def __init__(self, robot, get_time_since_reset, mark, simulation):    #Lägg till simulation som argument
         super(MPCController, self).__init__(robot, get_time_since_reset)
         self._constants = robot.GetCtrlConstants()
         self._mpc_controller = self._setup_controller(self._robot)
         self._kinematics = Kinematics(self._robot)
         self._pybullet_client = robot.pybullet_client
+        self._mark = mark
+        self._marks = self._robot.GetMarks()  #Fixa till den här skiten
+        self._simulation = simulation
+        self._motor_control_mode = simple_motor.MOTOR_CONTROL_HYBRID
+        # robot equipment
+        self.equip = Robot._load_equipment(self)
+        #self._quadruped = self._robot._load_urdf()
+        #self._marks = K3lso(Robot).GetMarks()
+        #Vet inte exact va de vill komma åt från marks.py-filen
+
+
         global START_ANGLE
         global INDEX
         global arrive
@@ -85,29 +105,29 @@ class MPCController(Controller):
 
     @staticmethod
     def setup_ui_params(pybullet_client):
-        x_id = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
-        y_id = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
-        speed_id = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
-        x_id2 = pybullet_client.addUserDebugParameter("X-coord", -2., 2., 0.)
-        y_id2 = pybullet_client.addUserDebugParameter("Y-coord", -2., 2., 0.)
+        #x_id = pybullet_client.addUserDebugParameter(" X-coord", -2., 2., 0.)   #Ska vara noll för att uppdatera direkt
+        #y_id = pybullet_client.addUserDebugParameter(" Y-coord", -2., 2., 0.)
+        #speed_id = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
+        x_id2 = pybullet_client.addUserDebugParameter(" Destination - X", -6., 6., 0.)  #Destinations koordinater
+        y_id2 = pybullet_client.addUserDebugParameter(" Destination - Y", -6., 6., 0.)
         speed_id2 = pybullet_client.addUserDebugParameter(" VX", 0., 1., 0.5)
-        started = pybullet_client.addUserDebugParameter("Start/Stop", 1,0,1)
-        return x_id, y_id, speed_id, x_id2, y_id2, speed_id2, started
+        started = pybullet_client.addUserDebugParameter(" Start/Stop", 1, 0, 1)
+        return x_id2, y_id2, speed_id2, started
 
     @staticmethod
     def read_ui_params(pybullet_client, ui): #Setting speeds from UI
-        x_id, y_id, speed_id, x_id2, y_id2, speed_id2, started = ui
-        xcoord = pybullet_client.readUserDebugParameter(x_id)
-        ycoord = pybullet_client.readUserDebugParameter(y_id)
-        speed = pybullet_client.readUserDebugParameter(speed_id)
+        x_id2, y_id2, speed_id2, started = ui
+        #xcoord = pybullet_client.readUserDebugParameter(x_id)
+        #ycoord = pybullet_client.readUserDebugParameter(y_id)
+        #speed = pybullet_client.readUserDebugParameter(speed_id)
         xcoord2 = pybullet_client.readUserDebugParameter(x_id2)
         ycoord2 = pybullet_client.readUserDebugParameter(y_id2)
         speed2 = pybullet_client.readUserDebugParameter(speed_id2)
         start = pybullet_client.readUserDebugParameter(started)
-        return xcoord, ycoord, speed, xcoord2, ycoord2, speed2, start
+        return xcoord2, ycoord2, speed2, start
     
     def arrived(self, base_pos0, base_pos1, destination):
-        if (abs(base_pos0 - destination[0]) < 0.1) & (abs(base_pos1 - destination[1]) < 0.1):
+        if (abs(base_pos0 - destination[0]) < 0.05) & (abs(base_pos1 - destination[1]) < 0.05): #Ändrat felmarginalen till 0,05 från 0.1
             return True
         #else:
             #return False
@@ -116,26 +136,26 @@ class MPCController(Controller):
         if (abs(base_or0 - angle) < 0.05):
             return True
 
-    def get_angle(self,base_position0, base_position1, destination ):
+    def get_angle(self, base_position0, base_position1, destination):
 
-        desierdAngle = math.atan((destination[1]-base_position1)/(destination[0]-base_position0))
-        if ((desierdAngle < 0) & (destination[1]-base_position1 > 0)):
-            desierdAngle+=math.pi
+        desierdAngle = math.atan((destination[1] - base_position1)/(destination[0] - base_position0))
+        if (desierdAngle < 0) & (destination[1] - base_position1 > 0):
+            desierdAngle += math.pi
         elif (destination[1]-base_position1 < 0) & (destination[0]-base_position0 < 0):
-            desierdAngle-=math.pi
+            desierdAngle -= math.pi
 
         #desierdAngle -= startOrient
         return desierdAngle
 
 
     def update_controller_params(self, params):
-        if len(params) == 6:
-            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0], DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], SPEED_VECTOR[1] = params
+        if len(params) == 3:
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0] = params
             vx = 0.
             wz = 0.
             vy = 0.
         else:
-            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0], DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], SPEED_VECTOR[1], start = params
+            DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], SPEED_VECTOR[0], start = params
             vx = 0.
             wz = 0.
             vy = 0.
@@ -146,12 +166,26 @@ class MPCController(Controller):
         global arrive 
         global angle
         global INDEX
+        global start_time
+        global timerStarted
+
+
+
         desierdAngle = 0
         desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
         #fix getting angle depending on current pos so that you can input more points
         if(start % 2 == 0):
-            self._pybullet_client.addUserDebugLine([0,0,0], [DESTINATION_VECTOR[0][0],DESTINATION_VECTOR[0][1],0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
-            self._pybullet_client.addUserDebugLine([DESTINATION_VECTOR[0][0],DESTINATION_VECTOR[0][1],0], [DESTINATION_VECTOR[1][0],DESTINATION_VECTOR[1][1],0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
+            if INDEX == 0:
+                path = Robot.update_equipment_at_arrival(self)
+                # print(path)
+                DESTINATION_VECTOR.append(
+                    [path[0][1], path[1][1]])  # Startar av vektorn med att plocka ut första punkten
+                INDEX = INDEX + 1              # Från våran path planner
+            if (not timerStarted):
+                start_time = time.time()    #Startar ett tidtagarur
+                timerStarted = True
+            #self._pybullet_client.addUserDebugLine([0, 0, 0], [DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], 0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
+            #self._pybullet_client.addUserDebugLine([DESTINATION_VECTOR[0][0], DESTINATION_VECTOR[0][1], 0], [DESTINATION_VECTOR[1][0], DESTINATION_VECTOR[1][1], 0], lineColorRGB=[1, 1, 0], lineWidth=10.0, lifeTime=0)
             #set speed if pos is not desierd pos
             if self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX]) is not None:
                 arrive = self.arrived(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
@@ -161,20 +195,42 @@ class MPCController(Controller):
                     angle = self.isAngled(base_orientation[2], desierdAngle)
                     
                 if(angle):
-                        vx = SPEED_VECTOR[INDEX]
+                        vx = SPEED_VECTOR[0]    #Tror att det är den här som får K3lso att börja gå när den väl får rätt vinkel
                 else:
-                    if((desierdAngle < base_orientation[0]) & (not ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0])))):
+                    if desierdAngle < base_orientation[0]: #& (not ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0])))):
                         wz = -0.5
                         #print("-------")
                             
-                    elif((desierdAngle > base_orientation[0]) | ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0]))):
+                    elif desierdAngle > base_orientation[0]: #| ((desierdAngle < 0.) & ((2*math.pi + desierdAngle) > base_orientation[0]))):
                         wz = 0.5
             elif(arrive):
-                INDEX = (INDEX + 1)% len(DESTINATION_VECTOR)
-                desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
-                print(desierdAngle)
-                angle = False
-                arrive = False
+                if INDEX > len(DESTINATION_VECTOR):
+                    #DESTINATION_VECTOR[INDEX - 1]
+                    INDEX = 0
+                    arrive = True
+
+                else:
+                    INDEX = INDEX + 1 #% len(DESTINATION_VECTOR)
+                    #if (INDEX + 1) % 2:
+                    #path = Robot.update_equipment_at_arrival(self)      #Den sparar inte gamla hinder så den kan hamna i en loop lätt
+
+                    #print("Path: ", path)
+                    print("Destination Vector: ", DESTINATION_VECTOR)
+                    #pathLength = len(path[0])
+                    if len(DESTINATION_VECTOR) == 2:
+                        path = Robot.update_equipment_at_arrival(
+                            self)  # Den sparar inte gamla hinder så den kan hamna i en loop lätt
+                        for INDEX in range(len(path)):
+                            DESTINATION_VECTOR.append([path[0][INDEX], path[1][INDEX]])
+                    #print(DESTINATION_VECTOR[INDEX])
+                    desierdAngle = self.get_angle(base_position[0], base_position[1], DESTINATION_VECTOR[INDEX])
+                    #print(desierdAngle)
+                    #print(base_position[0])
+                    #print(base_position[1])
+                    #print(time.time() - start_time)
+                    #print("K3lsos destination: " + DESTINATION_VECTOR[1])
+                    angle = False
+                    arrive = False
 
             #print(base_orientation)
         # add robot ctrl offset
